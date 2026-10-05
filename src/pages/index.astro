@@ -6,14 +6,32 @@ import penguins from "../assets/penguins.json";
 ---
 
 <Layout>
-  <h1 class="text-2xl">Test Astro et Plot (Observablehq)</h1>
+  <h1 class="text-2xl">Les manchots : comparaison des becs</h1>
+
   <PlotFigure
     options={{
+      title: "Dimensions du bec des manchots",
+      subtitle: "Comparaison selon l’espèce",
+      caption:
+        "Chaque point représente un manchot. Sa position indique la longueur et la profondeur de son bec, en millimètres.",
+      ariaLabel:
+        "Nuage de points comparant la longueur et la profondeur du bec des manchots selon leur espèce.",
+      x: {
+        label: "Longueur du bec (mm)",
+      },
+      y: {
+        label: "Profondeur du bec (mm)",
+      },
+      color: {
+        legend: true,
+        label: "Espèce",
+      },
       marks: [
         Plot.dot(penguins, {
           x: "culmen_length_mm",
           y: "culmen_depth_mm",
           stroke: "species",
+          symbol: "species",
         }),
       ],
     }}
