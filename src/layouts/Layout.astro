@@ -1,7 +1,10 @@
 ---
 import "../styles/global.css";
 
-const { title = "TP 7 · Cartographie" } = Astro.props;
+const {
+  title = "TP 7 · Cartographie",
+  description = "Explorez les établissements et la population des départements français à travers les cartes interactives du TP 7.",
+} = Astro.props;
 const chemin = Astro.url.pathname.replace(/\/$/, "") || "/";
 
 const liens = [
@@ -31,6 +34,7 @@ const liens = [
     />
 
     <title>{title}</title>
+    <meta name="description" content={description} />
   </head>
 
   <body
