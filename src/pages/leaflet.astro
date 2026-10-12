@@ -3,42 +3,132 @@ import Layout from "../layouts/Layout.astro";
 import "leaflet/dist/leaflet.css";
 ---
 
-<Layout>
-  <h1 class="text-2xl">Carte des établissements</h1>
-  <p>Clique sur un point pour afficher le nom de l’établissement.</p>
+<Layout title="Les établissements · TP 7">
+  <header class="space-y-3">
+    <p class="text-sm font-bold uppercase tracking-widest text-[#8fc6ba]">
+      Explorer le territoire
+    </p>
+    <h1 class="text-3xl font-extrabold tracking-tight md:text-5xl">
+      Les établissements, sur la carte.
+    </h1>
+    <p class="max-w-2xl text-[#b6bdbb]">
+      Explore leur répartition géographique et sélectionne un point
+      pour découvrir le nom de l’établissement.
+    </p>
+  </header>
 
-  <div
-    id="map"
-    role="region"
-    aria-label="Carte interactive des établissements"
-    style="height: 600px; width: 100%;"
-  ></div>
+  <section
+    aria-labelledby="titre-carte"
+    class="space-y-5 rounded-2xl border border-[#343a3e] bg-[#1a1d21] p-5 md:p-8"
+  >
+    <div class="flex flex-wrap items-center justify-between gap-4">
+      <div>
+        <h2 id="titre-carte" class="text-xl font-bold">
+          Carte des établissements
+        </h2>
+        <p
+          id="nombre-etablissements"
+          role="status"
+          class="mt-2 text-sm text-[#b6bdbb]"
+        ></p>
+      </div>
+
+      <button
+        id="recentrer"
+        type="button"
+        class="rounded-xl bg-[#8fc6ba] px-4 py-3 text-sm font-bold text-[#101214] transition hover:bg-[#a5d2c6] focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-[#8fc6ba]"
+      >
+        Recentrer la carte
+      </button>
+    </div>
+
+    <div
+      id="map"
+      role="region"
+      aria-label="Carte interactive des établissements"
+      aria-describedby="aide-carte"
+      class="isolate h-[500px] w-full overflow-hidden rounded-xl border border-[#46504f] text-[#101214] md:h-[600px]"
+    ></div>
+
+    <p id="aide-carte" class="text-sm text-[#b6bdbb]">
+      Déplace la carte et utilise les boutons + et − pour zoomer.
+      Clique sur un point pour afficher le nom de l’établissement.
+    </p>
+
+    <noscript>
+      <p>Active JavaScript pour afficher la carte des établissements.</p>
+    </noscript>
+  </section>
 </Layout>
 
 <script>
   import L from "leaflet";
   import listeEtablissements from "../assets/listeEtablissements.json";
 
-  const map = L.map("map").setView([46.6033, 1.883], 6);
+  const carte = L.map("map").setView([46.6033, 1.883], 6);
 
   L.tileLayer("https://tile.openstreetmap.org/{z}/{x}/{y}.png", {
     maxZoom: 19,
     attribution:
       '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
-  }).addTo(map);
+  }).addTo(carte);
+
+  const marqueurs = L.featureGroup().addTo(carte);
+  let nombreAffiche = 0;
 
   listeEtablissements.forEach((etablissement) => {
+    const latitude = Number(etablissement.lat);
+    const longitude = Number(etablissement.lon);
+
+    // Évite de placer un point si ses coordonnées sont absentes ou invalides.
+    if (
+      etablissement.lat == null ||
+      etablissement.lon == null ||
+      String(etablissement.lat).trim() === "" ||
+      String(etablissement.lon).trim() === "" ||
+      !Number.isFinite(latitude) ||
+      !Number.isFinite(longitude) ||
+      Math.abs(latitude) > 90 ||
+      Math.abs(longitude) > 180
+    ) {
+      return;
+    }
+
     const popup = document.createElement("p");
     popup.textContent = etablissement.name;
 
-    L.circleMarker([etablissement.lat, etablissement.lon], {
+    L.circleMarker([latitude, longitude], {
       radius: 5,
-      color: "#1d4ed8",
-      weight: 1,
-      fillColor: "#3b82f6",
-      fillOpacity: 0.7,
+      color: "#185b73",
+      weight: 1.5,
+      fillColor: "#8fc6ba",
+      fillOpacity: 0.85,
     })
-      .addTo(map)
-      .bindPopup(popup);
+      .bindPopup(popup)
+      .addTo(marqueurs);
+
+    nombreAffiche++;
   });
+
+  function recentrer() {
+    const limites = marqueurs.getBounds();
+
+    if (limites.isValid()) {
+      carte.fitBounds(limites, {
+        padding: [30, 30],
+        maxZoom: 12,
+      });
+    }
+  }
+
+  recentrer();
+
+  document.querySelector("#recentrer")?.addEventListener("click", recentrer);
+
+  const compteur = document.querySelector("#nombre-etablissements");
+
+  if (compteur) {
+    compteur.textContent =
+      `${new Intl.NumberFormat("fr-FR").format(nombreAffiche)} établissements géolocalisés`;
+  }
 </script>

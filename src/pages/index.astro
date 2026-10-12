@@ -1,39 +1,194 @@
 ---
-import PlotFigure from "../components/PlotFigure.astro";
 import Layout from "../layouts/Layout.astro";
-import * as Plot from "@observablehq/plot";
-import penguins from "../assets/penguins.json";
 ---
 
-<Layout>
-  <h1 class="text-2xl">Les manchots : comparaison des becs</h1>
+<Layout title="Territoires · TP 7">
+  <section class="relative isolate">
+    <div
+      class="flex flex-wrap items-center justify-between gap-3 border-b border-[#46504f] pb-4 text-xs font-semibold uppercase tracking-[0.18em] text-[#b6bdbb]"
+    >
+      <p>TP 07 / Visualisation de données</p>
+      <p>Cartographie</p>
+    </div>
 
-  <PlotFigure
-    options={{
-      title: "Dimensions du bec des manchots",
-      subtitle: "Comparaison selon l’espèce",
-      caption:
-        "Chaque point représente un manchot. Sa position indique la longueur et la profondeur de son bec, en millimètres.",
-      ariaLabel:
-        "Nuage de points comparant la longueur et la profondeur du bec des manchots selon leur espèce.",
-      x: {
-        label: "Longueur du bec (mm)",
+    <div class="relative grid items-center lg:min-h-[660px] lg:grid-cols-12">
+      <!-- Partie éditoriale -->
+      <header class="relative z-10 pt-10 lg:col-span-5 lg:py-16">
+        <p class="mb-5 text-sm font-medium text-[#8fc6ba]">
+          Lire le territoire autrement
+        </p>
+
+        <h1
+          class="text-[clamp(3.5rem,7.5vw,7rem)] font-extrabold leading-[0.95] tracking-[-0.06em]"
+        >
+          CARTOGRAPHIE
+        
+        </h1>
+
+        <p class="mt-7 max-w-sm text-base leading-7 text-[#b6bdbb]">
+            Deux cartes pour explorer les établissements
+          et la population des départements.
+        </p>
+
+        <a
+          href="#cartes"
+          class="mt-8 inline-flex items-center gap-5 border-b border-[#8fc6ba] pb-2 text-sm font-semibold text-[#f5f2ec] transition-colors hover:text-[#8fc6ba] focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-[#8fc6ba]"
+        >
+          Choisir une carte
+          <span aria-hidden="true">↓</span>
+        </a>
+      </header>
+
+      <!-- Grande carte de France -->
+      <figure class="relative min-w-0 py-6 lg:col-span-7 lg:py-10">
+        <div
+          aria-hidden="true"
+          class="pointer-events-none absolute inset-x-10 top-1/2 -z-10 h-px bg-[#343a3e]"
+        ></div>
+
+        <div
+          id="carte-accueil"
+          aria-hidden="true"
+          class="mx-auto min-h-[300px] w-full max-w-[680px] sm:min-h-[440px] [&>svg]:block [&>svg]:h-auto [&>svg]:w-full"
+        ></div>
+
+        <figcaption
+          class="mt-2 text-right text-[11px] uppercase tracking-[0.14em] text-[#b6bdbb]"
+        >
+          Départements de France métropolitaine
+          <span class="mt-1 block normal-case tracking-normal">
+            Illustration · couleurs décoratives
+          </span>
+        </figcaption>
+
+        <noscript>
+          <p class="text-sm text-[#b6bdbb]">
+            Active JavaScript pour afficher la carte de France.
+          </p>
+        </noscript>
+      </figure>
+    </div>
+  </section>
+
+  <section
+    id="cartes"
+    aria-labelledby="titre-cartes"
+    class="scroll-mt-8 border-t border-[#46504f]"
+  >
+    <h2
+      id="titre-cartes"
+      class="py-5 text-xs font-semibold uppercase tracking-[0.18em] text-[#b6bdbb]"
+    >
+      Explorer le territoire
+    </h2>
+
+    <div class="grid border-t border-[#343a3e] md:grid-cols-2">
+      <a
+        href="/leaflet"
+        class="group bg-[#185b73] p-7 transition-colors hover:bg-[#1c6983] focus-visible:z-10 focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-[#8fc6ba] md:p-9"
+      >
+        <div class="flex items-center justify-between">
+          <span class="text-xs font-semibold uppercase tracking-[0.16em]">
+            01 / Localiser
+          </span>
+          <span aria-hidden="true" class="text-3xl">↗</span>
+        </div>
+
+        <h3 class="mt-10 text-3xl font-bold tracking-tight md:text-4xl">
+          Les établissements
+        </h3>
+
+        <p class="mt-4 max-w-sm text-sm leading-7 text-[#f5f2ec]">
+          Parcourir les lieux, zoomer sur une zone
+          et découvrir les établissements qui s’y trouvent.
+        </p>
+
+        <p class="mt-8 text-sm font-semibold underline underline-offset-4">
+          Ouvrir la carte
+        </p>
+      </a>
+
+      <a
+        href="/population"
+        class="group bg-[#8fc6ba] p-7 text-[#101214] transition-colors hover:bg-[#a5d2c6] focus-visible:z-10 focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-[#f5f2ec] md:p-9"
+      >
+        <div class="flex items-center justify-between">
+          <span class="text-xs font-semibold uppercase tracking-[0.16em]">
+            02 / Comparer
+          </span>
+          <span aria-hidden="true" class="text-3xl">↗</span>
+        </div>
+
+        <h3 class="mt-10 text-3xl font-bold tracking-tight md:text-4xl">
+          La population
+        </h3>
+
+        <p class="mt-4 max-w-sm text-sm leading-7">
+          Observer les départements selon l’année,
+          le sexe et la tranche d’âge sélectionnés.
+        </p>
+
+        <p class="mt-8 text-sm font-semibold underline underline-offset-4">
+          Ouvrir la carte
+        </p>
+      </a>
+    </div>
+  </section>
+</Layout>
+
+<script>
+  import * as Plot from "@observablehq/plot";
+  import type { FeatureCollection } from "geojson";
+  import departementsJSON from "../assets/departements.geojson.json";
+
+  const departements = departementsJSON as FeatureCollection;
+  const conteneur = document.querySelector("#carte-accueil");
+
+  // Palette décorative : ces couleurs ne représentent pas des statistiques.
+  const palette = [
+    "#185b73",
+    "#246b7d",
+    "#1d7666",
+    "#5ca89c",
+    "#8fc6ba",
+    "#a5d2c6",
+  ];
+
+  function couleurDepartement(code: string) {
+    const valeur = Array.from(code).reduce(
+      (total, caractere) => total + caractere.charCodeAt(0),
+      0,
+    );
+
+    return palette[valeur % palette.length];
+  }
+
+  if (conteneur) {
+    const carte = Plot.plot({
+      width: 680,
+      height: 620,
+      margin: 15,
+
+      // Fond transparent pour intégrer la carte au fond de la page.
+      style: {
+        background: "transparent",
       },
-      y: {
-        label: "Profondeur du bec (mm)",
+
+      projection: {
+        type: "mercator",
+        domain: departements,
       },
-      color: {
-        legend: true,
-        label: "Espèce",
-      },
+
       marks: [
-        Plot.dot(penguins, {
-          x: "culmen_length_mm",
-          y: "culmen_depth_mm",
-          stroke: "species",
-          symbol: "species",
+        Plot.geo(departements, {
+          fill: (departement) =>
+            couleurDepartement(String(departement.properties.code)),
+          stroke: "#101214",
+          strokeWidth: 1.2,
         }),
       ],
-    }}
-  />
-</Layout>
+    });
+
+    conteneur.replaceChildren(carte);
+  }
+</script>
