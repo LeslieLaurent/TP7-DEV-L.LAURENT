@@ -1,6 +1,9 @@
 ---
 import Layout from "../layouts/Layout.astro";
 import "leaflet/dist/leaflet.css";
+
+const bouton =
+  "rounded-xl border border-[#46504f] px-4 py-3 text-sm font-semibold hover:bg-[#343a3e] focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-[#8fc6ba]";
 ---
 
 <Layout title="Les établissements · TP 7">
@@ -8,64 +11,118 @@ import "leaflet/dist/leaflet.css";
     <p class="text-sm font-bold uppercase tracking-widest text-[#8fc6ba]">
       Explorer le territoire
     </p>
+
     <h1 class="text-3xl font-extrabold tracking-tight md:text-5xl">
       Les établissements, sur la carte.
     </h1>
-    <p class="max-w-2xl text-[#b6bdbb]">
-      Explore leur répartition géographique et sélectionne un point
-      pour découvrir le nom de l’établissement.
+
+    <p class="max-w-2xl leading-relaxed text-[#b6bdbb]">
+      Explore leur répartition géographique ou recherche un établissement
+      par son nom.
     </p>
   </header>
+
+  <section
+    aria-labelledby="titre-recherche"
+    class="space-y-4 rounded-2xl border border-[#343a3e] bg-[#1a1d21] p-5 md:p-8"
+  >
+    <h2 id="titre-recherche" class="text-xl font-bold">
+      Rechercher un établissement
+    </h2>
+
+    <div class="flex flex-col gap-3 sm:flex-row sm:items-end">
+      <div class="flex-1">
+        <label for="recherche" class="mb-2 block text-sm font-semibold">
+          Nom de l’établissement
+        </label>
+
+        <input
+          id="recherche"
+          type="search"
+          placeholder="Exemple : Strasbourg"
+          aria-describedby="aide-recherche"
+          aria-controls="map"
+          class="w-full rounded-xl border border-[#46504f] bg-[#101214] px-4 py-3 text-[#f5f2ec] placeholder:text-[#b6bdbb] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#8fc6ba]"
+        />
+      </div>
+
+      <button id="effacer" type="button" class={bouton}>
+        Effacer la recherche
+      </button>
+    </div>
+
+    <p id="aide-recherche" class="text-sm text-[#b6bdbb]">
+      Les points sont filtrés selon le nom saisi, sans distinction
+      d’accents ou de majuscules.
+    </p>
+
+    <p
+      id="compteur"
+      role="status"
+      aria-atomic="true"
+      class="text-sm font-semibold text-[#8fc6ba]"
+    ></p>
+  </section>
 
   <section
     aria-labelledby="titre-carte"
     class="space-y-5 rounded-2xl border border-[#343a3e] bg-[#1a1d21] p-5 md:p-8"
   >
     <div class="flex flex-wrap items-center justify-between gap-4">
-      <div>
-        <h2 id="titre-carte" class="text-xl font-bold">
-          Carte des établissements
-        </h2>
-        <p
-          id="nombre-etablissements"
-          role="status"
-          class="mt-2 text-sm text-[#b6bdbb]"
-        ></p>
-      </div>
+      <h2 id="titre-carte" class="text-xl font-bold">
+        Carte des établissements
+      </h2>
 
-      <button
-        id="recentrer"
-        type="button"
-        class="rounded-xl bg-[#8fc6ba] px-4 py-3 text-sm font-bold text-[#101214] transition hover:bg-[#a5d2c6] focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-[#8fc6ba]"
-      >
-        Recentrer la carte
+      <button id="recentrer" type="button" class={bouton}>
+        Recentrer sur les résultats
       </button>
     </div>
 
     <div
       id="map"
       role="region"
+      tabindex="0"
       aria-label="Carte interactive des établissements"
       aria-describedby="aide-carte"
-      class="isolate h-[500px] w-full overflow-hidden rounded-xl border border-[#46504f] text-[#101214] md:h-[600px]"
+      class="isolate h-[500px] w-full overflow-hidden rounded-xl border border-[#46504f] text-[#101214] focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-[#8fc6ba] md:h-[600px]"
     ></div>
 
-    <p id="aide-carte" class="text-sm text-[#b6bdbb]">
-      Déplace la carte et utilise les boutons + et − pour zoomer.
-      Clique sur un point pour afficher le nom de l’établissement.
+    <p id="aide-carte" class="text-sm leading-relaxed text-[#b6bdbb]">
+      Clique sur un point pour afficher son nom.
+      Lorsque la carte a le focus, utilise les flèches pour la déplacer
+      et les touches + et − pour zoomer.
     </p>
-
-    <noscript>
-      <p>Active JavaScript pour afficher la carte des établissements.</p>
-    </noscript>
   </section>
+
+  <noscript>
+    <p>Active JavaScript pour afficher la carte des établissements.</p>
+  </noscript>
 </Layout>
 
 <script>
   import L from "leaflet";
   import listeEtablissements from "../assets/listeEtablissements.json";
 
-  const carte = L.map("map").setView([46.6033, 1.883], 6);
+  const recherche = document.querySelector<HTMLInputElement>("#recherche")!;
+  const compteur = document.querySelector("#compteur")!;
+
+  function normaliser(texte: string) {
+    return texte
+      .normalize("NFD")
+      .replace(/[\u0300-\u036f]/g, "")
+      .toLocaleLowerCase("fr")
+      .trim();
+  }
+
+  const mouvementReduit = window.matchMedia(
+    "(prefers-reduced-motion: reduce)",
+  ).matches;
+
+  const carte = L.map("map", {
+    zoomAnimation: !mouvementReduit,
+    fadeAnimation: !mouvementReduit,
+    inertia: !mouvementReduit,
+  }).setView([46.6033, 1.883], 6);
 
   L.tileLayer("https://tile.openstreetmap.org/{z}/{x}/{y}.png", {
     maxZoom: 19,
@@ -73,62 +130,100 @@ import "leaflet/dist/leaflet.css";
       '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
   }).addTo(carte);
 
-  const marqueurs = L.featureGroup().addTo(carte);
-  let nombreAffiche = 0;
+  const groupe = L.featureGroup().addTo(carte);
 
-  listeEtablissements.forEach((etablissement) => {
-    const latitude = Number(etablissement.lat);
-    const longitude = Number(etablissement.lon);
+  const etablissements = listeEtablissements
+    .filter((etablissement) => {
+      const latitude = Number(etablissement.lat);
+      const longitude = Number(etablissement.lon);
 
-    // Évite de placer un point si ses coordonnées sont absentes ou invalides.
-    if (
-      etablissement.lat == null ||
-      etablissement.lon == null ||
-      String(etablissement.lat).trim() === "" ||
-      String(etablissement.lon).trim() === "" ||
-      !Number.isFinite(latitude) ||
-      !Number.isFinite(longitude) ||
-      Math.abs(latitude) > 90 ||
-      Math.abs(longitude) > 180
-    ) {
-      return;
-    }
-
-    const popup = document.createElement("p");
-    popup.textContent = etablissement.name;
-
-    L.circleMarker([latitude, longitude], {
-      radius: 5,
-      color: "#185b73",
-      weight: 1.5,
-      fillColor: "#8fc6ba",
-      fillOpacity: 0.85,
+      return (
+        etablissement.lat != null &&
+        etablissement.lon != null &&
+        String(etablissement.lat).trim() !== "" &&
+        String(etablissement.lon).trim() !== "" &&
+        Number.isFinite(latitude) &&
+        Number.isFinite(longitude) &&
+        Math.abs(latitude) <= 90 &&
+        Math.abs(longitude) <= 180
+      );
     })
-      .bindPopup(popup)
-      .addTo(marqueurs);
+    .map((etablissement) => {
+      const nomOriginal = String(etablissement.name ?? "").trim();
+      const nom = /\p{L}/u.test(nomOriginal)
+        ? nomOriginal
+        : "Nom non renseigné";
 
-    nombreAffiche++;
-  });
+      const popup = document.createElement("p");
+      popup.textContent = nom;
+
+      const marqueur = L.circleMarker(
+        [Number(etablissement.lat), Number(etablissement.lon)],
+        {
+          radius: 5,
+          color: "#185b73",
+          weight: 1.5,
+          fillColor: "#8fc6ba",
+          fillOpacity: 0.85,
+        },
+      ).bindPopup(popup);
+
+      return {
+        nomRecherche: normaliser(nom),
+        marqueur,
+      };
+    });
 
   function recentrer() {
-    const limites = marqueurs.getBounds();
+    const limites = groupe.getBounds();
 
     if (limites.isValid()) {
       carte.fitBounds(limites, {
         padding: [30, 30],
         maxZoom: 12,
+        animate: false,
       });
     }
   }
 
-  recentrer();
+  function filtrer() {
+    const mots = normaliser(recherche.value)
+      .split(/\s+/)
+      .filter(Boolean);
 
-  document.querySelector("#recentrer")?.addEventListener("click", recentrer);
+    const resultats = etablissements.filter((etablissement) =>
+      mots.every((mot) => etablissement.nomRecherche.includes(mot)),
+    );
 
-  const compteur = document.querySelector("#nombre-etablissements");
+    carte.closePopup();
+    groupe.clearLayers();
 
-  if (compteur) {
-    compteur.textContent =
-      `${new Intl.NumberFormat("fr-FR").format(nombreAffiche)} établissements géolocalisés`;
+    resultats.forEach(({ marqueur }) => {
+      groupe.addLayer(marqueur);
+    });
+
+    compteur.textContent = resultats.length
+      ? `${resultats.length.toLocaleString("fr-FR")} établissements affichés sur ${etablissements.length.toLocaleString("fr-FR")}.`
+      : "Aucun établissement trouvé. Essaie un autre nom.";
+
+    recentrer();
   }
+
+  let attente: ReturnType<typeof setTimeout> | undefined;
+
+  recherche.addEventListener("input", () => {
+    clearTimeout(attente);
+    attente = setTimeout(filtrer, 250);
+  });
+
+  document.querySelector("#effacer")!.addEventListener("click", () => {
+    clearTimeout(attente);
+    recherche.value = "";
+    filtrer();
+    recherche.focus();
+  });
+
+  document.querySelector("#recentrer")!.addEventListener("click", recentrer);
+
+  filtrer();
 </script>
