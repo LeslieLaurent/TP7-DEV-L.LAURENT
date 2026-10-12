@@ -1,26 +1,89 @@
 ---
 import "../styles/global.css";
+
+const { title = "TP 7 · Cartographie" } = Astro.props;
+const chemin = Astro.url.pathname.replace(/\/$/, "") || "/";
+
+const liens = [
+  { href: "/", label: "Les manchots" },
+  { href: "/leaflet", label: "Les établissements" },
+  { href: "/population", label: "La population" },
+];
 ---
 
 <!doctype html>
-<html lang="en">
+<html lang="fr">
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width" />
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <meta name="generator" content={Astro.generator} />
-    <title>Astro Basics</title>
+
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link
+      rel="preconnect"
+      href="https://fonts.gstatic.com"
+      crossorigin
+    />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&display=swap"
+      rel="stylesheet"
+    />
+
+    <title>{title}</title>
   </head>
-  <body>
-    <slot />
+
+  <body
+    class="m-0 min-h-screen bg-[#101214] font-['Manrope',sans-serif] text-[#f5f2ec] antialiased"
+  >
+    <a
+      href="#contenu"
+      class="sr-only focus:not-sr-only focus:absolute focus:z-50 focus:rounded-lg focus:bg-[#8fc6ba] focus:p-3 focus:text-[#101214]"
+    >
+      Aller au contenu
+    </a>
+
+    <header class="border-b border-[#343a3e] bg-[#1a1d21]">
+      <div
+        class="mx-auto flex max-w-7xl flex-col gap-5 px-5 py-6 md:flex-row md:items-center md:justify-between"
+      >
+        <a href="/" class="text-xl font-extrabold tracking-tight">
+          Leslie<span class="text-[#8fc6ba]">.</span>
+          <span class="ml-3 text-sm font-medium text-[#b6bdbb]">
+            TP 7 · Cartographie
+          </span>
+        </a>
+
+        <nav aria-label="Navigation principale" class="flex flex-wrap gap-2">
+          {
+            liens.map((lien) => (
+              <a
+                href={lien.href}
+                aria-current={chemin === lien.href ? "page" : undefined}
+                class:list={[
+                  "rounded-xl px-4 py-2 text-sm font-semibold transition focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-[#8fc6ba]",
+                  chemin === lien.href
+                    ? "bg-[#8fc6ba] text-[#101214]"
+                    : "text-[#b6bdbb] hover:bg-[#343a3e] hover:text-[#f5f2ec]",
+                ]}
+              >
+                {lien.label}
+              </a>
+            ))
+          }
+        </nav>
+      </div>
+    </header>
+
+    <main
+      id="contenu"
+      class="mx-auto max-w-7xl space-y-6 px-5 py-10 [&>h1]:text-3xl [&>h1]:font-extrabold [&>h1]:tracking-tight [&>p]:text-[#b6bdbb]"
+    >
+      <slot />
+    </main>
+
+    <footer class="mx-auto max-w-7xl px-5 py-6 text-sm text-[#b6bdbb]">
+      Leslie Laurent · BUT MMI · Visualisation de données
+    </footer>
   </body>
 </html>
-
-<style>
-  html,
-  body {
-    margin: 0;
-    width: 100%;
-    height: 100%;
-  }
-</style>

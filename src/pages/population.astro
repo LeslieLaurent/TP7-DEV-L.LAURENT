@@ -1,0 +1,274 @@
+---
+import Layout from "../layouts/Layout.astro";
+---
+
+<Layout title="Population par département · TP 7">
+  <section class="space-y-3">
+    <p class="text-sm font-bold uppercase tracking-widest text-[#8fc6ba]">
+      Explorer les données
+    </p>
+
+    <h1 class="text-3xl font-extrabold tracking-tight md:text-5xl">
+      La population, par département.
+    </h1>
+
+    <p class="max-w-2xl leading-relaxed text-[#b6bdbb]">
+      Choisis une année, un sexe et une tranche d’âge pour explorer
+      la population des départements de France métropolitaine.
+    </p>
+  </section>
+
+  <section
+    aria-labelledby="titre-filtres"
+    class="rounded-2xl border border-[#343a3e] bg-[#1a1d21] p-6"
+  >
+    <h2 id="titre-filtres" class="mb-5 text-lg font-bold">
+      Affiner la sélection
+    </h2>
+
+    <div
+      class="grid gap-5 md:grid-cols-3 [&_label]:mb-2 [&_label]:block [&_label]:text-sm [&_label]:font-semibold [&_select]:w-full [&_select]:rounded-xl [&_select]:border [&_select]:border-[#46504f] [&_select]:bg-[#101214] [&_select]:p-3 [&_select]:text-[#f5f2ec] [&_select]:scheme-dark [&_select:focus-visible]:outline-2 [&_select:focus-visible]:outline-[#8fc6ba]"
+    >
+      <div>
+        <label for="periode">Année</label>
+        <select id="periode" aria-describedby="aide-filtres"></select>
+      </div>
+
+      <div>
+        <label for="sexe">Sexe</label>
+        <select id="sexe" aria-describedby="aide-filtres"></select>
+      </div>
+
+      <div>
+        <label for="age">Tranche d’âge</label>
+        <select id="age" aria-describedby="aide-filtres"></select>
+      </div>
+    </div>
+
+    <p id="aide-filtres" class="mt-4 text-sm text-[#b6bdbb]">
+      Les choix proposés dépendent des données disponibles pour ta sélection.
+    </p>
+  </section>
+
+  <section
+    aria-labelledby="titre-carte"
+    class="overflow-hidden rounded-2xl border border-[#343a3e] bg-[#1a1d21]"
+  >
+    <div class="space-y-2 border-b border-[#343a3e] p-6">
+      <h2 id="titre-carte" class="text-xl font-bold">
+        Répartition de la population
+      </h2>
+
+      <p
+        id="resume"
+        role="status"
+        class="text-sm text-[#8fc6ba]"
+      >
+        Chargement des données…
+      </p>
+    </div>
+
+    <div class="p-3 md:p-6">
+      <div
+        id="carte-population"
+        class="overflow-x-auto rounded-xl bg-[#f5f2ec] p-4 text-[#101214] [&_figure]:mx-auto [&_figure]:my-0 [&_svg]:max-w-full"
+      ></div>
+    </div>
+
+    <p class="px-6 pb-6 text-sm leading-relaxed text-[#b6bdbb]">
+      Survole un département pour consulter sa population.
+      Le gris indique une donnée indisponible.
+      Les seuils de la légende sont recalculés à chaque sélection :
+      une même couleur peut donc correspondre à des valeurs différentes.
+    </p>
+  </section>
+
+  <noscript>
+    <p class="rounded-xl border border-[#8fc6ba] p-4">
+      Active JavaScript pour afficher la carte et utiliser les filtres.
+    </p>
+  </noscript>
+</Layout>
+
+<script>
+  import * as Plot from "@observablehq/plot";
+  import type { FeatureCollection } from "geojson";
+
+  import departementsJSON from "../assets/departements.geojson.json";
+  import populationMain from "../assets/populationMain.json";
+
+  const departements = departementsJSON as FeatureCollection;
+
+  // Préparer les données indépendamment du graphique.
+  // trim() retire notamment l’espace présent après « De 15 à 24 ans ».
+  const donnees = populationMain.map((ligne) => ({
+    departement: ligne.Géographie.trim(),
+    annee: Number(ligne.Période),
+    sexe: ligne.Sexe.trim(),
+    age: ligne["Âge"].trim(),
+    population:
+      ligne.Valeur == null || String(ligne.Valeur).trim() === ""
+        ? NaN
+        : Number(ligne.Valeur),
+  }));
+
+  const elmYear = document.getElementById("periode") as HTMLSelectElement;
+  const elmSex = document.getElementById("sexe") as HTMLSelectElement;
+  const elmAge = document.getElementById("age") as HTMLSelectElement;
+  const conteneur = document.getElementById("carte-population")!;
+  const resume = document.getElementById("resume")!;
+
+  // Extraire les valeurs uniques ; placer « Total » en premier.
+  function valeursUniques(valeurs: string[]) {
+    return [...new Set(valeurs)].sort((a, b) => {
+      if (a === b) return 0;
+      if (a === "Total") return -1;
+      if (b === "Total") return 1;
+
+      return a.localeCompare(b, "fr", { numeric: true });
+    });
+  }
+
+  // Remplir un SELECT et conserver son choix s’il est encore disponible.
+  function remplirSelect(
+    select: HTMLSelectElement,
+    valeurs: string[],
+    preference = select.value
+  ) {
+    const options = valeurs.map((valeur) => new Option(valeur, valeur));
+    select.replaceChildren(...options);
+
+    select.value = valeurs.includes(preference)
+      ? preference
+      : (valeurs[0] ?? "");
+  }
+
+  // Les années viennent du JSON, de la plus récente à la plus ancienne.
+  const annees = [...new Set(donnees.map((d) => d.annee))]
+    .sort((a, b) => b - a)
+    .map(String);
+
+  remplirSelect(elmYear, annees);
+
+  // Les sexes disponibles dépendent de l’année.
+  function actualiserSexes() {
+    const selectedYear = Number(elmYear.value);
+
+    const lignes = donnees.filter((d) => d.annee === selectedYear);
+
+    remplirSelect(
+      elmSex,
+      valeursUniques(lignes.map((d) => d.sexe))
+    );
+  }
+
+  // Les âges disponibles dépendent de l’année ET du sexe.
+  function actualiserAges() {
+    const selectedYear = Number(elmYear.value);
+    const selectedSex = elmSex.value;
+
+    const lignes = donnees.filter(
+      (d) => d.annee === selectedYear && d.sexe === selectedSex
+    );
+
+    remplirSelect(
+      elmAge,
+      valeursUniques(lignes.map((d) => d.age))
+    );
+  }
+
+  function afficherCarte() {
+    const selectedYear = Number(elmYear.value);
+    const selectedSex = elmSex.value;
+    const selectedAge = elmAge.value;
+
+    // Sélectionner uniquement les lignes correspondant aux trois filtres.
+    const selection = donnees.filter(
+      (d) =>
+        d.annee === selectedYear &&
+        d.sexe === selectedSex &&
+        d.age === selectedAge &&
+        Number.isFinite(d.population)
+    );
+
+    // Associer chaque nom de département à sa population.
+    const populations = new Map(
+      selection.map((d) => [d.departement, d.population])
+    );
+
+    const graphique = Plot.plot({
+      width: 900,
+      height: 620,
+
+      title: `Population par département — ${selectedYear}`,
+      subtitle: `Sexe : ${selectedSex} · Âge : ${selectedAge}`,
+      caption: "Population en nombre d’habitants.",
+      ariaLabel:
+        `Carte de population des départements métropolitains en ${selectedYear}. ` +
+        `Sexe : ${selectedSex}. Âge : ${selectedAge}.`,
+
+      projection: {
+        type: "mercator",
+        domain: departements,
+      },
+
+      color: {
+        type: "quantile",
+        n: 8,
+        scheme: "Greens",
+        legend: true,
+        label: "Population (habitants)",
+        unknown: "#c6c9c8",
+      },
+
+      marks: [
+        Plot.geo(departements, {
+          fill: (d) => populations.get(d.properties.nom),
+
+          stroke: "#596461",
+          strokeWidth: 0.5,
+
+          title: (d) => {
+            const nom = d.properties.nom;
+            const valeur = populations.get(nom);
+
+            return valeur === undefined
+              ? `${nom}\nDonnée indisponible`
+              : `${nom}\n${valeur.toLocaleString("fr-FR")} habitants`;
+          },
+
+          tip: true,
+        }),
+      ],
+    });
+
+    // Remplacer l’ancienne carte au lieu d’en ajouter une autre.
+    conteneur.replaceChildren(graphique);
+
+    const nombreDepartements = departements.features.filter(
+      (d) => populations.has(d.properties?.nom)
+    ).length;
+
+    resume.textContent =
+      `${selectedYear} · ${selectedSex} · ${selectedAge} · ` +
+      `${nombreDepartements} départements renseignés`;
+  }
+
+  elmYear.addEventListener("change", () => {
+    actualiserSexes();
+    actualiserAges();
+    afficherCarte();
+  });
+
+  elmSex.addEventListener("change", () => {
+    actualiserAges();
+    afficherCarte();
+  });
+
+  elmAge.addEventListener("change", afficherCarte);
+
+  // Premier affichage avec les choix disponibles dans le fichier.
+  actualiserSexes();
+  actualiserAges();
+  afficherCarte();
+</script>
